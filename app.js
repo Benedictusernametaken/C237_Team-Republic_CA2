@@ -196,6 +196,16 @@ app.post('/report', checkAuthenticated, (req, res) => {
     const gigId = req.body.gig_id;
     const userId = req.session.user.id;
 
+    if (!userId) {
+        req.flash('error', 'Please log in again to submit a report.');
+        return res.redirect('/login');
+    }
+
+    if (!gigId) {
+        req.flash('error', 'Invalid gig selected.');
+        return res.redirect('/home');
+    }
+
     db.query(
         'INSERT INTO reports (reason, comment, gig_id, user_id, status) VALUES (?, ?, ?, ?, ?)',
         [reason, comment || null, gigId, userId, 'pending'],
