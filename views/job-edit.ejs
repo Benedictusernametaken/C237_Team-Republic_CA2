@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Job Posting</title>
+</head>
+<body>
+    <h1>Edit Job Posting</h1>
+    <a href="/jobs/edit">Back to Jobs</a>
+
+    <% if (errors && errors.length > 0) { %>
+        <p><%= errors[0] %></p>
+    <% } %>
+
+    <form action="/jobs/edit/<%= job.gig_id %>" method="POST">
+        <label for="title">Job title</label>
+        <input id="title" name="title" maxlength="45" value="<%= job.title %>" required>
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" maxlength="1000" required><%= job.description %></textarea>
+
+        <label for="category">Category</label>
+        <input id="category" name="category" maxlength="45" value="<%= job.category %>" required>
+
+        <label for="cash">Payment ($)</label>
+        <input id="cash" name="cash" type="number" min="1" step="1" value="<%= job.cash %>" required>
+
+        <label for="image">Image filename</label>
+        <input id="image" name="image" maxlength="1000" value="<%= job.image %>" required>
+
+        <label for="status">Status</label>
+        <select id="status" name="status" required>
+            <option value="open" <%= job.status === 'open' ? 'selected' : '' %>>Open</option>
+            <option value="closed" <%= job.status === 'closed' ? 'selected' : '' %>>Closed</option>
+        </select>
+
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>

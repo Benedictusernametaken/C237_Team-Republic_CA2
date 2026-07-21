@@ -8,6 +8,11 @@
     <div class="container">
         <h1 class="mt-5">Dashboard</h1>
         <p>Welcome, <%= user.username %> (<%= user.role %>)</p>
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success"><%= messages[0] %></div>
+        <% } %>
+        <a href="/jobs/create">Create Job Posting</a>
+        <a href="/jobs/edit">Manage Job Postings</a>
         <% if (user.role === 'admin') { %>
             <a href="/admin" class="btn btn-primary">Admin Dashboard</a>
         <% } %>

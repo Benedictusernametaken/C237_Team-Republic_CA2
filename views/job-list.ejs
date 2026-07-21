@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Job Postings</title>
+</head>
+<body>
+    <h1>Manage Job Postings</h1>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/jobs/create">Create Job</a>
+
+    <% if (messages && messages.length > 0) { %>
+        <p><%= messages[0] %></p>
+    <% } %>
+    <% if (errors && errors.length > 0) { %>
+        <p><%= errors[0] %></p>
+    <% } %>
+
+    <% if (jobs.length === 0) { %>
+        <p>No job postings yet.</p>
+    <% } else { %>
+        <table>
+            <thead>
+                <tr><th>Title</th><th>Category</th><th>Payment</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <% jobs.forEach(job => { %>
+                    <tr>
+                        <td><%= job.title %></td>
+                        <td><%= job.category %></td>
+                        <td>$<%= job.cash %></td>
+                        <td><%= job.status %></td>
+                        <td><a href="/jobs/edit/<%= job.gig_id %>">Edit</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } %>
+</body>
+</html>

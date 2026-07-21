@@ -63,6 +63,34 @@ const checkAdmin = (req, res, next) => {
     }
 };
 
+// Validate and clean job posting form data before it is saved.
+const validateJob = (req, res, next) => {
+    const job = {
+        title: req.body.title ? req.body.title.trim() : '',
+        description: req.body.description ? req.body.description.trim() : '',
+        category: req.body.category ? req.body.category.trim() : '',
+        cash: req.body.cash ? req.body.cash.trim() : '',
+        status: req.body.status ? req.body.status.trim() : 'open',
+        image: req.body.image ? req.body.image.trim() : ''
+    };
+    const allowedStatuses = ['open', 'closed'];
+
+    if (!job.title || !job.description || !job.category || !job.cash || !job.image) {
+        req.flash('error', 'Please fill in all fields.');
+    } else if (job.title.length > 45 || job.category.length > 45) {
+        req.flash('error', 'The title and category must each be 45 characters or fewer.');
+    } else if (job.description.length > 1000 || job.image.length > 1000) {
+        req.flash('error', 'The description and image filename must each be 1000 characters or fewer.');
+    } else if (!Number.isInteger(Number(job.cash)) || Number(job.cash) <= 0) {
+        req.flash('error', 'Payment must be a whole number more than $0.');
+    } else if (!allowedStatuses.includes(job.status)) {
+        req.flash('error', 'Please select a valid status.');
+    }
+
+    req.job = job;
+    next();
+};
+
 // Routes
 app.get('/', (req, res) => {
     res.render('index', { user: req.session.user, messages: req.flash('success')});
@@ -146,7 +174,112 @@ app.post('/login', (req, res) => {
 
 //******** TODO: Insert code for dashboard route to render dashboard page for users. ********//
 app.get('/dashboard', checkAuthenticated, (req, res) => {
-    res.render('dashboard', { user: req.session.user });
+    res.render('dashboard', {
+        user: req.session.user,
+        messages: req.flash('success')
+    });
+});
+
+// Job posting routes (Janelle)
+app.get('/jobs/create', checkAuthenticated, (req, res) => {
+    res.render('job-create', {
+        user: req.session.user,
+        errors: req.flash('error'),
+        formData: req.flash('formData')[0] || {}
+    });
+});
+
+app.post('/jobs/create', checkAuthenticated, validateJob, (req, res) => {
+    const errors = req.flash('error');
+    if (errors.length > 0) {
+        req.flash('error', errors);
+        req.flash('formData', req.job);
+        return res.redirect('/jobs/create');
+    }
+
+    const { title, description, category, cash, status, image } = req.job;
+    // gig_id is not AUTO_INCREMENT in the shared database, so generate the next ID.
+    const sql = `INSERT INTO gigs
+        (gig_id, title, description, category, cash, status, image)
+        SELECT COALESCE(MAX(gig_id), 0) + 1, ?, ?, ?, ?, ?, ? FROM gigs`;
+
+    db.query(sql, [title, description, category, cash, status, image], (err) => {
+        if (err) {
+            console.error('Error creating job:', err);
+            req.flash('error', 'Unable to create the job. Please try again.');
+            req.flash('formData', req.job);
+            return res.redirect('/jobs/create');
+        }
+
+        req.flash('success', 'Job posting created successfully.');
+        res.redirect('/jobs/edit');
+    });
+});
+
+app.get('/jobs/edit', checkAuthenticated, (req, res) => {
+    db.query('SELECT * FROM gigs ORDER BY gig_id DESC', (err, jobs) => {
+        if (err) {
+            console.error('Error loading jobs:', err);
+            req.flash('error', 'Unable to load job postings.');
+            return res.render('job-list', {
+                user: req.session.user,
+                jobs: [],
+                messages: req.flash('success'),
+                errors: req.flash('error')
+            });
+        }
+
+        res.render('job-list', {
+            user: req.session.user,
+            jobs,
+            messages: req.flash('success'),
+            errors: req.flash('error')
+        });
+    });
+});
+
+app.get('/jobs/edit/:id', checkAuthenticated, (req, res) => {
+    db.query('SELECT * FROM gigs WHERE gig_id = ?', [req.params.id], (err, jobs) => {
+        if (err || jobs.length === 0) {
+            if (err) console.error('Error loading job:', err);
+            req.flash('error', 'Job posting not found.');
+            return res.redirect('/jobs/edit');
+        }
+
+        res.render('job-edit', {
+            user: req.session.user,
+            job: jobs[0],
+            errors: req.flash('error')
+        });
+    });
+});
+
+app.post('/jobs/edit/:id', checkAuthenticated, validateJob, (req, res) => {
+    const errors = req.flash('error');
+    if (errors.length > 0) {
+        req.flash('error', errors);
+        return res.redirect(`/jobs/edit/${req.params.id}`);
+    }
+
+    const { title, description, category, cash, status, image } = req.job;
+    const sql = `UPDATE gigs
+        SET title = ?, description = ?, category = ?, cash = ?, status = ?, image = ?
+        WHERE gig_id = ?`;
+
+    db.query(sql, [title, description, category, cash, status, image, req.params.id], (err, result) => {
+        if (err) {
+            console.error('Error updating job:', err);
+            req.flash('error', 'Unable to update the job. Please try again.');
+            return res.redirect(`/jobs/edit/${req.params.id}`);
+        }
+        if (result.affectedRows === 0) {
+            req.flash('error', 'Job posting not found.');
+            return res.redirect('/jobs/edit');
+        }
+
+        req.flash('success', 'Job posting updated successfully.');
+        res.redirect('/jobs/edit');
+    });
 });
 //******** TODO: Insert code for admin route to render dashboard page for admin. ********//
 app.get('/admin', checkAdmin, (req, res) => {
