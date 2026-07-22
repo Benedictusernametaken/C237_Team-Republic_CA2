@@ -46,9 +46,16 @@
                 <strong>Status:</strong>
                 <%= gig.status %>
             </p>
-            <a href="/home" class="btn btn-secondary">
-                Back to Home
-            </a>
+
+            <div class="mt-3">
+                <a href="/report/<%= gig.gig_id %>" class="btn btn-danger">
+                    Report Gig
+                </a>
+                
+                <a href="/home" class="btn btn-secondary">
+                    Back to Home
+                </a>
+            </div>
         </div>
     </div>
 </div>
