@@ -204,10 +204,11 @@ module.exports = function(db) {
         console.log("Brevo API Response:", responseData);
 
         return response.ok;
-
-        return response.ok;
     }
 
-    module.exports = router;
-    return router;
-}
+    module.exports = {
+        router,
+        checkAuthenticated
+    };
+    return { router, checkAuthenticated };
+};
