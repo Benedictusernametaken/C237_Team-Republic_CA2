@@ -3,10 +3,8 @@ const express = require('express');
 const mysql = require('mysql2');
 const session = require('express-session');
 const flash = require('connect-flash');
-
 const app = express();
 
-// Database connection
 const db = mysql.createConnection({
     host: 'c237-eaint-mysql.mysql.database.azure.com',
     user: 'c237_001',
@@ -36,12 +34,78 @@ app.use(session({
 }));
 
 app.use(flash());
-
-// Setting up EJS
 app.set('view engine', 'ejs');
 
-// Import and mount the auth routes (Make sure the path matches your folder structure, e.g., './routes/authRoutes')
-const authRoutes = require('./authRoutes')(db);
+// --- APP & FEATURE ROUTES ---
+
+app.get('/gig/:id', checkAuthenticated, (req, res) => {
+    const gigId = req.params.id;
+    const sql = "SELECT * FROM gigs WHERE gig_id = ?";
+    db.query(sql, [gigId], (err, results) => {
+        if (err) throw err;
+        if (results.length === 0) {
+            return res.send("Gig not found");
+        }
+        res.render('gig', {
+            user: req.session.user,
+            gig: results[0]
+        });
+    });
+});
+
+app.get('/report/:id', checkAuthenticated, (req, res) => {
+    const gigId = req.params.id;
+
+    db.query(
+        'SELECT * FROM gigs WHERE gig_id = ?',
+        [gigId],
+        (err, results) => {
+            if (err) throw err;
+
+            res.render('report', {
+                gig: results[0]
+            });
+        }
+    );
+});
+
+app.post('/report', checkAuthenticated, (req, res) => {
+    const reason = req.body.reason;
+    const comment = req.body.comment;
+    const gigId = req.body.gig_id;
+    const userId = req.session.user.id;
+
+    if (!userId) {
+        req.flash('error', 'Please log in again to submit a report.');
+        return res.redirect('/login');
+    }
+
+    if (!gigId) {
+        req.flash('error', 'Invalid gig selected.');
+        return res.redirect('/home');
+    }
+
+    db.query(
+        'INSERT INTO reports (reason, comment, gig_id, user_id, status) VALUES (?, ?, ?, ?, ?)',
+        [reason, comment || null, gigId, userId, 'pending'],
+        (err) => {
+            if (err) {
+                console.error('Error submitting report:', err);
+                req.flash('error', 'Unable to submit report. Please try again.');
+                return res.redirect('/home');
+            }
+
+            req.flash('success', 'Report submitted successfully.');
+            res.redirect('/home');
+        }
+    );
+});
+
+// Import auth routes and the shared middleware function
+const authModule = require('./authRoutes')(db);
+const authRoutes = authModule.router;
+const checkAuthenticated = authModule.checkAuthenticated;
+
 app.use('/', authRoutes);
 
 // Starting the server
