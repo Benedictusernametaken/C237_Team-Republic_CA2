@@ -35,24 +35,24 @@ app.use(session({
 app.use(flash());
 app.set('view engine', 'ejs');
 
-//******** TODO: Create a Middleware to check if user is logged in. ********//
+// Middleware to ensure the user is logged in.
 const checkAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    } else {
+    if (!req.session.user) {
         req.flash('error', 'Please log in to view this resource');
-        res.redirect('/login');
+        return res.redirect('/login');
     }
+
+    next();
 };
 
-//******** TODO: Create a Middleware to check if user is admin. ********//
+// Middleware to ensure the user is an admin.
 const checkAdmin = (req, res, next) => {
-    if (req.session.user.role === 'admin') {
-        return next();
-    } else {
+    if (req.session.user?.role !== 'admin') {
         req.flash('error', 'Access denied');
-        res.redirect('/dashboard');
+        return res.redirect('/dashboard');
     }
+
+    next();
 };
 
 // Routes
@@ -170,6 +170,54 @@ app.get('/dashboard', checkAuthenticated, (req, res) => {
 //******** TODO: Insert code for admin route to render dashboard page for admin. ********//
 app.get('/admin', checkAdmin, (req, res) => {
     res.render('admin', { user: req.session.user });
+});
+
+app.get('/report/:id', checkAuthenticated, (req, res) => {
+    const gigId = req.params.id;
+
+    db.query(
+        'SELECT * FROM gigs WHERE gig_id = ?',
+        [gigId],
+        (err, results) => {
+            if (err) throw err;
+
+            res.render('report', {
+                gig: results[0]
+            });
+        }
+    );
+});
+
+app.post('/report', checkAuthenticated, (req, res) => {
+    const reason = req.body.reason;
+    const comment = req.body.comment;
+    const gigId = req.body.gig_id;
+    const userId = req.session.user.id;
+
+    if (!userId) {
+        req.flash('error', 'Please log in again to submit a report.');
+        return res.redirect('/login');
+    }
+
+    if (!gigId) {
+        req.flash('error', 'Invalid gig selected.');
+        return res.redirect('/home');
+    }
+
+    db.query(
+        'INSERT INTO reports (reason, comment, gig_id, user_id, status) VALUES (?, ?, ?, ?, ?)',
+        [reason, comment || null, gigId, userId, 'pending'],
+        (err) => {
+            if (err) {
+                console.error('Error submitting report:', err);
+                req.flash('error', 'Unable to submit report. Please try again.');
+                return res.redirect('/home');
+            }
+
+            req.flash('success', 'Report submitted successfully.');
+            res.redirect('/home');
+        }
+    );
 });
 
 //******** TODO: Insert code for logout route ********//
