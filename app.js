@@ -4,17 +4,15 @@ const session = require('express-session');
 const flash = require('connect-flash');
 const app = express();
 
-const dbConfig = {
+const db = mysql.createConnection({
     host: 'c237-eaint-mysql.mysql.database.azure.com',
     user: 'c237_001',
     password: 'c237001@2026!',
     database: 'c237_001_teamrepublic',
     ssl: {
-        rejectUnauthorized: true
-    }
-};
-
-const db = mysql.createConnection(dbConfig);
+    rejectUnauthorized: true 
+  }
+});
 
 db.connect((err) => {
     if (err) {
