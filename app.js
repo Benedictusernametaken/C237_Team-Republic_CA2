@@ -1,21 +1,16 @@
 const express = require('express');
 const mysql = require('mysql2');
-
-//******** TODO: Insert code to import 'express-session' *********//
 const session = require('express-session');
-
 const flash = require('connect-flash');
-
 const app = express();
 
-// Database connection
 const db = mysql.createConnection({
     host: 'c237-eaint-mysql.mysql.database.azure.com',
     user: 'c237_001',
     password: 'c237001@2026!',
     database: 'c237_001_teamrepublic',
     ssl: {
-    rejectUnauthorized: true // Set to false ONLY if you are using self-signed certs in dev
+    rejectUnauthorized: true 
   }
 });
 
@@ -29,7 +24,6 @@ db.connect((err) => {
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
-//******** TODO: Insert code for Session Middleware below ********//
 app.use(session({
     secret: 'secret',
     resave: false,
@@ -39,8 +33,6 @@ app.use(session({
 }));
 
 app.use(flash());
-
-// Setting up EJS
 app.set('view engine', 'ejs');
 
 //******** TODO: Create a Middleware to check if user is logged in. ********//
@@ -65,7 +57,34 @@ const checkAdmin = (req, res, next) => {
 
 // Routes
 app.get('/', (req, res) => {
-    res.render('index', { user: req.session.user, messages: req.flash('success')});
+    res.redirect('/login');
+});
+
+app.get('/home', checkAuthenticated, (req, res) => {
+    const sql = "SELECT * FROM gigs WHERE status = 'open'";
+    db.query(sql, (err, results) => {
+        if (err) throw err;
+        res.render('index', {
+            user: req.session.user,
+            messages: req.flash('success'),
+            products: results
+        });
+    });
+});
+
+app.get('/gig/:id', checkAuthenticated, (req, res) => {
+    const gigId = req.params.id;
+    const sql = "SELECT * FROM gigs WHERE gig_id = ?";
+    db.query(sql, [gigId], (err, results) => {
+        if (err) throw err;
+        if (results.length === 0) {
+            return res.send("Gig not found");
+        }
+        res.render('gig', {
+            user: req.session.user,
+            gig: results[0]
+        });
+    });
 });
 
 app.get('/register', (req, res) => {
@@ -103,7 +122,7 @@ app.post('/register', validateRegistration, (req, res) => {
         }
         console.log(result);
         req.flash('success', 'Registration successful! Please log in.');
-        res.redirect('/login');
+        res.redirect('/home');
     });
 });
 
@@ -135,7 +154,7 @@ app.post('/login', (req, res) => {
       // Successful login
       req.session.user = results[0]; // store user in session
       req.flash('success', 'Login successful!');
-      res.redirect('/dashboard');
+      res.redirect('/home');
     } else {
       // Invalid credentials
       req.flash('error', 'Invalid email or password.');
@@ -156,7 +175,7 @@ app.get('/admin', checkAdmin, (req, res) => {
 //******** TODO: Insert code for logout route ********//
 app.get('/logout', (req, res) => {
     req.session.destroy();
-    res.redirect('/');
+    res.redirect('/login');
 });
 
 // Starting the server
