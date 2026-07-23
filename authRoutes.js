@@ -70,42 +70,53 @@ module.exports = function(db) {
     });
 
     router.post('/login', (req, res) => {
-        const { username, password } = req.body;
-        if (!username || !password) {
-            req.flash('error', 'All fields are required.');
-            return res.redirect('/login');
+    const { username, password } = req.body;
+    if (!username || !password) {
+        req.flash('error', 'All fields are required.');
+        return res.redirect('/login');
+    }
+
+    const sql = 'SELECT * FROM users WHERE username = ? AND password = SHA1(?)';
+    db.query(sql, [username, password], (err, results) => {
+        if (err) {
+            console.error("Database SELECT Error:", err);
+            throw err;
         }
 
-        const sql = 'SELECT * FROM users WHERE username = ? AND password = SHA1(?)';
-        db.query(sql, [username, password], (err, results) => {
-            if (err) throw err;
+        console.log("Login query results length:", results.length); // Check this in terminal
 
-            if (results.length > 0) {
-                const user = results[0];
-                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const expiresAt = new Date(Date.now() + 5 * 60000); // 5 mins from now
+        if (results.length > 0) {
+            const user = results[0];
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 5 * 60000); 
 
-                const updateSql = 'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?';
-                db.query(updateSql, [otpCode, expiresAt, user.id], async (updateErr) => {
-                    if (updateErr) throw updateErr;
+            const updateSql = 'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?';
+            db.query(updateSql, [otpCode, expiresAt, user.id], async (updateErr) => {
+                if (updateErr) {
+                    console.error("Database UPDATE Error:", updateErr);
+                    throw updateErr;
+                }
 
-                    const emailSent = await sendTwoFactorEmail(req, user.email, user.username, otpCode);
+                console.log("Attempting to send 2FA email to:", user.email);
+                const emailSent = await sendTwoFactorEmail(req, user.email, user.username, otpCode);
+                console.log("Email sent status result:", emailSent);
 
-                    if (emailSent) {
-                        req.session.pendingUserId = user.id;
-                        req.flash('success', 'OTP sent to your email.');
-                        res.redirect('/verify-2fa');
-                    } else {
-                        req.flash('error', 'Failed to send verification email.');
-                        res.redirect('/login');
-                    }
-                });
-            } else {
-                req.flash('error', 'Invalid username or password.');
-                res.redirect('/login');
-            }
-        });
+                if (emailSent) {
+                    req.session.pendingUserId = user.id;
+                    req.flash('success', 'OTP sent to your email.');
+                    res.redirect('/verify-2fa');
+                } else {
+                    req.flash('error', 'Failed to send verification email.');
+                    res.redirect('/login');
+                }
+            });
+        } else {
+            console.log("No user found with those credentials."); // Check if it falls here
+            req.flash('error', 'Invalid username or password.');
+            res.redirect('/login');
+        }
     });
+});
 
     router.get('/verify-2fa', (req, res) => {
         if (!req.session.pendingUserId) {
@@ -145,7 +156,7 @@ module.exports = function(db) {
                     delete req.session.pendingUserId;
                     req.session.user = user;
                     req.flash('success', 'Login successful!');
-                    res.redirect('/dashboard');
+                    res.redirect('/');
                 });
             } else {
                 req.flash('error', 'Invalid or expired OTP code.');

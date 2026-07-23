@@ -36,6 +36,11 @@ app.use(session({
 app.use(flash());
 app.set('view engine', 'ejs');
 
+// Import auth routes and the shared middleware function
+const authModule = require('./authRoutes')(db);
+const authRoutes = authModule.router;
+const checkAuthenticated = authModule.checkAuthenticated;
+
 // --- APP & FEATURE ROUTES ---
 
 app.get('/gig/:id', checkAuthenticated, (req, res) => {
@@ -100,11 +105,6 @@ app.post('/report', checkAuthenticated, (req, res) => {
         }
     );
 });
-
-// Import auth routes and the shared middleware function
-const authModule = require('./authRoutes')(db);
-const authRoutes = authModule.router;
-const checkAuthenticated = authModule.checkAuthenticated;
 
 app.use('/', authRoutes);
 
