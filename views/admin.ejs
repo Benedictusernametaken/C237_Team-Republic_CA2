@@ -28,6 +28,94 @@
 
     <br>
 
+    <hr>
+
+    <h3>Pending Reports</h3>
+
+    <% if (reports.length === 0) { %>
+
+        <p>No pending reports.</p>
+
+    <% } else { %>
+
+        <table class="table table-bordered">
+
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Reason</th>
+                    <th>Comment</th>
+                    <th>Gig ID</th>
+                    <th>User ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <% reports.forEach(report => { %>
+
+                    <tr>
+
+                        <td>
+                            <%= report.report_id %>
+                        </td>
+
+                        <td>
+                            <%= report.reason %>
+                        </td>
+
+                        <td>
+                            <%= report.comment %>
+                        </td>
+
+                        <td>
+                            <%= report.gig_id %>
+                        </td>
+
+                        <td>
+                            <%= report.user_id %>
+                        </td>
+
+                        <td>
+                            <%= report.status %>
+                        </td>
+
+                        <td>
+
+                            <form action="/admin/reports/<%= report.report_id %>/accept" method="POST">
+
+                                <button type="submit" class="btn btn-success">
+                                    Accept
+                                </button>
+
+                            </form>
+
+                            <br>
+
+                            <form action="/admin/reports/<%= report.report_id %>/deny" method="POST">
+
+                                <button type="submit" class="btn btn-danger">
+                                    Deny
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+                <% }) %>
+
+            </tbody>
+
+        </table>
+
+    <% } %>
+
+    <br>
+
     <a href="/logout" class="btn btn-primary">
         Logout
     </a>
