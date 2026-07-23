@@ -40,6 +40,7 @@ app.set('view engine', 'ejs');
 const authModule = require('./authRoutes')(db);
 const authRoutes = authModule.router;
 const checkAuthenticated = authModule.checkAuthenticated;
+const checkAdmin = authModule.checkAdmin;
 
 // --- APP & FEATURE ROUTES ---
 
@@ -119,6 +120,33 @@ app.post('/report', checkAuthenticated, (req, res) => {
 });
 
 app.use('/', authRoutes);
+
+//Admin
+app.get('/api/gig-category-chart', checkAdmin, (req, res) => {
+
+    const sql = `
+        SELECT category,
+               COUNT(*) AS total
+        FROM gigs
+        GROUP BY category
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json(err);
+        }
+
+        res.json(results);
+    });
+
+});
+
+//******** TODO: Insert code for logout route ********//
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
+});
 
 // Starting the server
 app.listen(3000, () => {

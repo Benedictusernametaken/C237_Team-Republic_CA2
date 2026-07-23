@@ -239,5 +239,5 @@ module.exports = function(db) {
         return response.ok;
     }
 
-    return { router, checkAuthenticated };
+    return { router, checkAuthenticated, checkAdmin };
 };
