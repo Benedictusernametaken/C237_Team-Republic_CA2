@@ -2,13 +2,81 @@
 <html>
 <head>
     <title>Admin Dashboard</title>
+
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-    <div class="container">
-        <h1 class="mt-5">Admin Dashboard</h1>
-        <p>Welcome, <%= user.username %> (<%= user.role %>)</p>
-        <a href="/logout" class="btn btn-primary">Logout</a>
-    </div>
+
+<div class="container mt-5">
+
+    <h1>Admin Dashboard</h1>
+
+    <p>
+        Welcome,
+        <%= user.username %>
+        (<%= user.role %>)
+    </p>
+
+    <hr>
+
+    <h3>Gig Categories</h3>
+
+    <canvas id="categoryChart" width="500" height="500"></canvas>
+
+    <br>
+
+    <a href="/logout" class="btn btn-primary">
+        Logout
+    </a>
+
+</div>
+
+<script>
+
+fetch('/api/gig-category-chart')
+.then(response => response.json())
+.then(data => {
+
+    const labels = data.map(item => item.category);
+    const totals = data.map(item => item.total);
+
+    new Chart(document.getElementById('categoryChart'), {
+
+        type: 'pie',
+
+        data: {
+            labels: labels,
+
+            datasets: [{
+                data: totals
+            }]
+        },
+
+        options: {
+            responsive: true,
+
+            plugins: {
+
+                title: {
+                    display: true,
+                    text: 'Gig Categories'
+                },
+
+                legend: {
+                    position: 'right'
+                }
+
+            }
+        }
+
+    });
+
+});
+
+</script>
+
 </body>
 </html>
