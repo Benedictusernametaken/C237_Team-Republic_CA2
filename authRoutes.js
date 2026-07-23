@@ -53,7 +53,7 @@ module.exports = function(db) {
         const { username, email, password, address, contact, role } = req.body;
         const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
         
-        db.query(sql, [username, email, password, address, contact, role], (err, result) => {
+        db.query(sql, [username, email, password, address, contact, role || 'user'], (err, result) => {
             if (err) {
                 console.error('Error registering user:', err);
                 req.flash('error', 'Unable to register right now. Please try again.');
@@ -75,55 +75,62 @@ module.exports = function(db) {
     });
 
     router.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        req.flash('error', 'All fields are required.');
-        return res.redirect('/login');
-    }
-
-    const sql = 'SELECT * FROM users WHERE username = ? AND password = SHA1(?)';
-    db.query(sql, [username, password], (err, results) => {
-        if (err) {
-            console.error("Database SELECT Error:", err);
-            req.flash('error', 'Something went wrong. Please try again.');
+        const { username, password } = req.body;
+        if (!username || !password) {
+            req.flash('error', 'All fields are required.');
             return res.redirect('/login');
         }
 
-        console.log("Login query results length:", results.length); // Check this in terminal
+        const sql = 'SELECT * FROM users WHERE username = ? AND password = SHA1(?)';
+        db.query(sql, [username, password], (err, results) => {
+            if (err) {
+                console.error("Database SELECT Error:", err);
+                req.flash('error', 'Something went wrong. Please try again.');
+                return res.redirect('/login');
+            }
 
-        if (results.length > 0) {
-            const user = results[0];
-            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-            const expiresAt = new Date(Date.now() + 5 * 60000); 
+            console.log("Login query results length:", results.length); // Check this in terminal
 
-            const updateSql = 'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?';
-            db.query(updateSql, [otpCode, expiresAt, user.id], async (updateErr) => {
-                if (updateErr) {
-                    console.error("Database UPDATE Error:", updateErr);
-                    req.flash('error', 'Something went wrong. Please try again.');
+            if (results.length > 0) {
+                const user = results[0];
+
+                // Check if account is banned
+                if (user.status === 'banned') {
+                    req.flash('error', 'Your account has been banned. Please contact support.');
                     return res.redirect('/login');
                 }
 
-                console.log("Attempting to send 2FA email to:", user.email);
-                const emailSent = await sendTwoFactorEmail(req, user.email, user.username, otpCode);
-                console.log("Email sent status result:", emailSent);
+                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = new Date(Date.now() + 5 * 60000); 
 
-                if (emailSent) {
-                    req.session.pendingUserId = user.id;
-                    req.flash('success', 'OTP sent to your email.');
-                    res.redirect('/verify-2fa');
-                } else {
-                    req.flash('error', 'Failed to send verification email.');
-                    res.redirect('/login');
-                }
-            });
-        } else {
-            console.log("No user found with those credentials."); // Check if it falls here
-            req.flash('error', 'Invalid username or password.');
-            res.redirect('/login');
-        }
+                const updateSql = 'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?';
+                db.query(updateSql, [otpCode, expiresAt, user.id], async (updateErr) => {
+                    if (updateErr) {
+                        console.error("Database UPDATE Error:", updateErr);
+                        req.flash('error', 'Something went wrong. Please try again.');
+                        return res.redirect('/login');
+                    }
+
+                    console.log("Attempting to send 2FA email to:", user.email);
+                    const emailSent = await sendTwoFactorEmail(req, user.email, user.username, otpCode);
+                    console.log("Email sent status result:", emailSent);
+
+                    if (emailSent) {
+                        req.session.pendingUserId = user.id;
+                        req.flash('success', 'OTP sent to your email.');
+                        res.redirect('/verify-2fa');
+                    } else {
+                        req.flash('error', 'Failed to send verification email.');
+                        res.redirect('/login');
+                    }
+                });
+            } else {
+                console.log("No user found with those credentials.");
+                req.flash('error', 'Invalid username or password.');
+                res.redirect('/login');
+            }
+        });
     });
-});
 
     router.get('/verify-2fa', (req, res) => {
         if (!req.session.pendingUserId) {
@@ -193,8 +200,63 @@ module.exports = function(db) {
         });
     });
 
+    // Admin Dashboard (with User Search & Filter)
     router.get('/admin', checkAdmin, (req, res) => {
-        res.render('admin', { user: req.session.user });
+        const search = req.query.search || '';
+        const filter = req.query.filter || 'all';
+
+        // Query non-admin users only
+        let sql = "SELECT id, username, email, address, contact, role, status FROM users WHERE (role IS NULL OR role != 'admin')";
+        let queryParams = [];
+
+        // Handle Search (Username or Email)
+        if (search) {
+            sql += " AND (username LIKE ? OR email LIKE ?)";
+            queryParams.push(`%${search}%`, `%${search}%`);
+        }
+
+        // Handle Status Filter (active or banned)
+        if (filter && filter !== 'all') {
+            sql += " AND status = ?";
+            queryParams.push(filter);
+        }
+
+        db.query(sql, queryParams, (err, users) => {
+            if (err) {
+                console.error('Error fetching users:', err);
+                req.flash('error', 'Unable to fetch users.');
+                return res.render('admin', { 
+                    user: req.session.user, 
+                    users: [], 
+                    search, 
+                    filter 
+                });
+            }
+
+            res.render('admin', { 
+                user: req.session.user, 
+                users, 
+                search, 
+                filter 
+            });
+        });
+    });
+
+    // Handle Ban / Unban Toggle Action
+    router.post('/admin/ban/:id', checkAdmin, (req, res) => {
+        const userId = req.params.id;
+        const newStatus = req.body.status; // 'banned' or 'active'
+
+        const sql = 'UPDATE users SET status = ? WHERE id = ?';
+        db.query(sql, [newStatus, userId], (err) => {
+            if (err) {
+                console.error('Error updating user status:', err);
+                req.flash('error', 'Failed to update user status.');
+            } else {
+                req.flash('success', `User status updated to ${newStatus}.`);
+            }
+            res.redirect('/admin');
+        });
     });
 
     router.get('/logout', (req, res) => {
@@ -231,7 +293,6 @@ module.exports = function(db) {
             body: JSON.stringify(emailData)
         });
 
-        // ADD THESE LINES TO DEBUG:
         const responseData = await response.json();
         console.log("Brevo API Status:", response.status);
         console.log("Brevo API Response:", responseData);

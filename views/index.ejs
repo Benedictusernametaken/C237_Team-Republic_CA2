@@ -54,50 +54,32 @@
         </h2>
 
         <div class="row">
-<<<<<<< HEAD
-            <% gigs.forEach(gig => { %>
-=======
 
-            <% products.forEach(product => { %>
-
->>>>>>> c5a0650d4783d13e17b52abdf51714beb08698c0
-                <div class="col-md-4 mb-4">
-
-                    <div class="card h-100">
-<<<<<<< HEAD
-                        <img src="/images/<%= gig.image %>" class="card-img-top" style="height:250px; object-fit:cover;">
-                        <div class="card-body text-center">
-                            <h5><%= gig.title %></h5>
-                            <p>$<%= gig.cash %></p>
-                            <a href="/gig/<%= gig.gig_id %>" class="btn btn-primary">View Details</a>
-=======
-
-                        <img
-                            src="/images/<%= product.image %>"
-                            class="card-img-top"
-                            alt="<%= product.title %>"
-                            style="height:250px; object-fit:cover;"
-                        >
-
-                        <div class="card-body text-center">
-
-                            <h5><%= product.title %></h5>
-
-                            <p>$<%= product.cash %></p>
-
-                            <a
-                                href="/gig/<%= product.gig_id %>"
-                                class="btn btn-primary"
+            <% if (typeof gigs !== 'undefined' && gigs.length > 0) { %>
+                <% gigs.forEach(gig => { %>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <img
+                                src="/images/<%= gig.image %>"
+                                class="card-img-top"
+                                alt="<%= gig.title %>"
+                                style="height:250px; object-fit:cover;"
                             >
-                                View Details
-                            </a>
-
->>>>>>> c5a0650d4783d13e17b52abdf51714beb08698c0
+                            <div class="card-body text-center">
+                                <h5><%= gig.title %></h5>
+                                <p>$<%= gig.cash %></p>
+                                <a href="/gig/<%= gig.gig_id %>" class="btn btn-primary">
+                                    View Details
+                                </a>
+                            </div>
                         </div>
                     </div>
+                <% }) %>
+            <% } else { %>
+                <div class="col-12 text-center text-muted">
+                    <p>No gigs available at the moment.</p>
                 </div>
-
-            <% }) %>
+            <% } %>
 
         </div>
     </div>
