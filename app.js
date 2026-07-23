@@ -41,6 +41,7 @@ const authModule = require('./authRoutes')(db);
 const authRoutes = authModule.router;
 const checkAuthenticated = authModule.checkAuthenticated;
 const checkAdmin = authModule.checkAdmin;
+const validateRegistration = authModule.validateRegistration;
 
 // --- APP & FEATURE ROUTES ---
 

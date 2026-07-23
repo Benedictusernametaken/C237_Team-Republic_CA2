@@ -231,13 +231,64 @@ module.exports = function(db) {
             body: JSON.stringify(emailData)
         });
 
-        // ADD THESE LINES TO DEBUG:
         const responseData = await response.json();
         console.log("Brevo API Status:", response.status);
         console.log("Brevo API Response:", responseData);
 
-        return response.ok;
+        // IMPORTANT: response.ok / status 201 only means Brevo accepted the
+        // request into its send queue. Sender validation and actual delivery
+        // are checked asynchronously afterwards, so a 201 here can still be
+        // followed seconds later by a rejection (e.g. unverified sender)
+        // that this initial response has no way of seeing.
+        if (!response.ok || !responseData.messageId) {
+            return false;
+        }
+
+        return await confirmEmailAccepted(responseData.messageId);
     }
 
-    return { router, checkAuthenticated, checkAdmin };
+    // Polls Brevo's event log for the message a few times, since delivery
+    // status isn't available immediately after the send call returns.
+    // Returns false if Brevo logs a rejection/bounce/block for this message,
+    // true if no failure event shows up within the retry window.
+    async function confirmEmailAccepted(messageId, attempts = 3, delayMs = 2000) {
+        const failureEvents = ['rejected', 'error', 'blocked', 'hardBounces', 'softBounces'];
+
+        for (let i = 0; i < attempts; i++) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+            try {
+                const eventsRes = await fetch(
+                    `https://api.brevo.com/v3/smtp/statistics/events?messageId=${encodeURIComponent(messageId)}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "accept": "application/json",
+                            "api-key": process.env.BREVO_API_KEY
+                        }
+                    }
+                );
+
+                const eventsData = await eventsRes.json();
+                const events = eventsData.events || [];
+
+                const failure = events.find(e => failureEvents.includes(e.event));
+                if (failure) {
+                    console.error("Brevo reported a delivery failure:", failure);
+                    return false;
+                }
+            } catch (checkErr) {
+                console.error("Error checking Brevo delivery status:", checkErr);
+                // Don't fail the login just because the status check itself
+                // errored (e.g. network hiccup) — fall through and retry/return true.
+            }
+        }
+
+        // No failure event seen within the retry window. This does NOT
+        // guarantee inbox delivery (spam filtering downstream is invisible
+        // to Brevo too), only that Brevo itself didn't reject the send.
+        return true;
+    }
+
+    return { router, checkAuthenticated, checkAdmin, validateRegistration };
 };
