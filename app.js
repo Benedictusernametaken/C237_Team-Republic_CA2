@@ -92,6 +92,37 @@ app.get('/gig/:id', checkAuthenticated, (req, res) => {
     });
 });
 
+// Accept a gig
+app.post('/gig/:id/accept', checkAuthenticated, (req, res) => {
+    const gigId = req.params.id;
+    const userId = req.session.user.id;
+
+    const sql = `
+        UPDATE gigs
+        SET accepted_by = ?,
+            status = 'closed'
+        WHERE gig_id = ?
+          AND status = 'open'
+          AND accepted_by IS NULL
+    `;
+
+    db.query(sql, [userId, gigId], (err, result) => {
+        if (err) {
+            console.error('Error accepting gig:', err);
+            req.flash('error', 'Unable to accept gig.');
+            return res.redirect(`/gig/${gigId}`);
+        }
+
+        if (result.affectedRows === 0) {
+            req.flash('error', 'This gig is no longer available.');
+            return res.redirect('/home');
+        }
+
+        req.flash('success', 'Gig accepted successfully.');
+        res.redirect('/dashboard');
+    });
+});
+
 app.get('/register', (req, res) => {
     res.render('register', {
         messages: req.flash('error'),
