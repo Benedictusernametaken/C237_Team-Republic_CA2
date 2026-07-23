@@ -20,7 +20,7 @@ const checkAdmin = (req, res, next) => {
         return next();
     } else {
         req.flash('error', 'Access denied');
-        res.redirect('/dashboard');
+        res.redirect('/home');
     }
 };
 
@@ -42,7 +42,7 @@ const validateRegistration = (req, res, next) => {
 // Wrap your routes in a function that accepts 'db'
 module.exports = function(db) {
     router.get('/', (req, res) => {
-        res.render('index', { user: req.session.user, messages: req.flash('success') });
+        res.redirect('/login');
     });
 
     router.get('/register', (req, res) => {
@@ -54,7 +54,12 @@ module.exports = function(db) {
         const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
         
         db.query(sql, [username, email, password, address, contact, role], (err, result) => {
-            if (err) throw err;
+            if (err) {
+                console.error('Error registering user:', err);
+                req.flash('error', 'Unable to register right now. Please try again.');
+                req.flash('formData', req.body);
+                return res.redirect('/register');
+            }
             req.flash('success', 'Registration successful! Please log in.');
             res.redirect('/login');
         });
@@ -80,7 +85,8 @@ module.exports = function(db) {
     db.query(sql, [username, password], (err, results) => {
         if (err) {
             console.error("Database SELECT Error:", err);
-            throw err;
+            req.flash('error', 'Something went wrong. Please try again.');
+            return res.redirect('/login');
         }
 
         console.log("Login query results length:", results.length); // Check this in terminal
@@ -94,7 +100,8 @@ module.exports = function(db) {
             db.query(updateSql, [otpCode, expiresAt, user.id], async (updateErr) => {
                 if (updateErr) {
                     console.error("Database UPDATE Error:", updateErr);
-                    throw updateErr;
+                    req.flash('error', 'Something went wrong. Please try again.');
+                    return res.redirect('/login');
                 }
 
                 console.log("Attempting to send 2FA email to:", user.email);
@@ -138,7 +145,11 @@ module.exports = function(db) {
 
         const sql = 'SELECT * FROM users WHERE id = ?';
         db.query(sql, [userId], (err, results) => {
-            if (err) throw err;
+            if (err) {
+                console.error('Database SELECT Error (verify-2fa):', err);
+                req.flash('error', 'Something went wrong. Please try again.');
+                return res.redirect('/verify-2fa');
+            }
 
             if (results.length === 0) {
                 req.flash('error', 'User not found.');
@@ -151,12 +162,16 @@ module.exports = function(db) {
             if (user.otp_code === otp_code && new Date(user.otp_expires_at) > currentTime) {
                 const clearSql = 'UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE id = ?';
                 db.query(clearSql, [userId], (clearErr) => {
-                    if (clearErr) throw clearErr;
+                    if (clearErr) {
+                        console.error('Database UPDATE Error (clear OTP):', clearErr);
+                        req.flash('error', 'Something went wrong. Please try again.');
+                        return res.redirect('/verify-2fa');
+                    }
 
                     delete req.session.pendingUserId;
                     req.session.user = user;
                     req.flash('success', 'Login successful!');
-                    res.redirect('/');
+                    res.redirect('/home');
                 });
             } else {
                 req.flash('error', 'Invalid or expired OTP code.');
@@ -167,8 +182,15 @@ module.exports = function(db) {
 
     // --- PROTECTED DASHBOARD & ADMIN ROUTES ---
 
-    router.get('/dashboard', checkAuthenticated, (req, res) => {
-        res.render('dashboard', { user: req.session.user });
+    router.get('/home', checkAuthenticated, (req, res) => {
+        db.query('SELECT * FROM gigs', (err, gigs) => {
+            if (err) {
+                console.error('Error fetching gigs for dashboard:', err);
+                req.flash('error', 'Something went wrong loading your dashboard.');
+                return res.render('dashboard', { user: req.session.user, gigs: [] });
+            }
+            res.render('dashboard', { user: req.session.user, gigs });
+        });
     });
 
     router.get('/admin', checkAdmin, (req, res) => {
@@ -217,9 +239,5 @@ module.exports = function(db) {
         return response.ok;
     }
 
-    module.exports = {
-        router,
-        checkAuthenticated
-    };
     return { router, checkAuthenticated };
 };

@@ -47,7 +47,11 @@ app.get('/gig/:id', checkAuthenticated, (req, res) => {
     const gigId = req.params.id;
     const sql = "SELECT * FROM gigs WHERE gig_id = ?";
     db.query(sql, [gigId], (err, results) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Error fetching gig:', err);
+            req.flash('error', 'Something went wrong loading this gig. Please try again.');
+            return res.redirect('/home');
+        }
         if (results.length === 0) {
             return res.send("Gig not found");
         }
@@ -65,7 +69,15 @@ app.get('/report/:id', checkAuthenticated, (req, res) => {
         'SELECT * FROM gigs WHERE gig_id = ?',
         [gigId],
         (err, results) => {
-            if (err) throw err;
+            if (err) {
+                console.error('Error fetching gig for report:', err);
+                req.flash('error', 'Something went wrong. Please try again.');
+                return res.redirect('/home');
+            }
+
+            if (results.length === 0) {
+                return res.send("Gig not found");
+            }
 
             res.render('report', {
                 gig: results[0]
