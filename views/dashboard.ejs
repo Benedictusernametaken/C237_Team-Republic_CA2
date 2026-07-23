@@ -1,17 +1,412 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dashboard</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>User Dashboard</title>
+
+    <link
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .dashboard-header {
+            margin-top: 40px;
+            margin-bottom: 30px;
+        }
+
+        .profile-card,
+        .filter-card,
+        .gig-card,
+        .summary-card {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .profile-card {
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .profile-label {
+            font-weight: bold;
+        }
+
+        .summary-card {
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 100%;
+        }
+
+        .summary-card h3 {
+            font-size: 18px;
+            color: #6c757d;
+        }
+
+        .summary-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        .filter-card {
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .gig-card {
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 100%;
+        }
+
+        .gig-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .gig-status {
+            display: inline-block;
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            text-transform: capitalize;
+        }
+
+        .gig-category {
+            display: inline-block;
+            background-color: #e9ecef;
+            padding: 5px 12px;
+            border-radius: 15px;
+            text-transform: capitalize;
+        }
+
+        .empty-message,
+        .no-results-message {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .no-results-message {
+            display: none;
+        }
+    </style>
 </head>
+
 <body>
     <div class="container">
-        <h1 class="mt-5">Dashboard</h1>
-        <p>Welcome, <%= user.username %> (<%= user.role %>)</p>
-        <% if (user.role === 'admin') { %>
-            <a href="/admin" class="btn btn-primary">Admin Dashboard</a>
+
+        <div class="dashboard-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Welcome back, <%= user.username %>!</h1>
+                <p class="text-muted">
+                    Manage your profile and view your accepted gigs.
+                </p>
+            </div>
+
+            <div>
+                <a href="/home" class="btn btn-secondary">Home</a>
+
+                <% if (user.role === 'admin') { %>
+                    <a href="/admin" class="btn btn-primary">
+                        Admin Dashboard
+                    </a>
+                <% } %>
+
+                <a href="/logout" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h3>Accepted Gigs</h3>
+                    <p class="summary-number"><%= gigs.length %></p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h3>Account Role</h3>
+                    <p class="summary-number text-capitalize">
+                        <%= user.role %>
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h3>Account Status</h3>
+                    <p class="summary-number">Active</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="profile-card">
+            <h2>My Profile</h2>
+            <hr>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <span class="profile-label">Username:</span>
+                        <%= user.username %>
+                    </p>
+
+                    <p>
+                        <span class="profile-label">Email:</span>
+                        <%= user.email %>
+                    </p>
+
+                    <p>
+                        <span class="profile-label">Role:</span>
+                        <span class="text-capitalize"><%= user.role %></span>
+                    </p>
+                </div>
+
+                <div class="col-md-6">
+                    <p>
+                        <span class="profile-label">Address:</span>
+                        <%= user.address %>
+                    </p>
+
+                    <p>
+                        <span class="profile-label">Contact:</span>
+                        <%= user.contact %>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="mb-3">My Accepted Gigs</h2>
+
+        <% if (!gigs || gigs.length === 0) { %>
+
+            <div class="empty-message">
+                <p class="mb-0">
+                    You have not accepted any gigs yet.
+                </p>
+            </div>
+
+        <% } else { %>
+
+            <div class="filter-card">
+                <div class="row">
+
+                    <div class="col-md-4 mb-2">
+                        <label for="gigSearch">Search gigs</label>
+
+                        <input
+                            type="text"
+                            id="gigSearch"
+                            class="form-control"
+                            placeholder="Search by title..."
+                        >
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label for="categoryFilter">Category</label>
+
+                        <select
+                            id="categoryFilter"
+                            class="form-control"
+                        >
+                            <option value="all">All Categories</option>
+
+                            <% 
+                                const categories = [
+                                    ...new Set(
+                                        gigs
+                                            .map(gig => gig.category)
+                                            .filter(category => category)
+                                    )
+                                ];
+                            %>
+
+                            <% categories.forEach(category => { %>
+                                <option value="<%= category.toLowerCase() %>">
+                                    <%= category %>
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label for="paymentSort">Sort by payment</label>
+
+                        <select
+                            id="paymentSort"
+                            class="form-control"
+                        >
+                            <option value="default">Default</option>
+                            <option value="high">Highest to Lowest</option>
+                            <option value="low">Lowest to Highest</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <div
+                id="gigContainer"
+                class="row"
+            >
+
+                <% gigs.forEach(gig => { %>
+
+                    <div
+                        class="col-md-4 mb-4 gig-item"
+                        data-title="<%= gig.title.toLowerCase() %>"
+                        data-category="<%= gig.category ? gig.category.toLowerCase() : '' %>"
+                        data-payment="<%= gig.cash %>"
+                    >
+
+                        <div class="gig-card">
+
+                            <% if (gig.image) { %>
+                                <img
+                                    src="/images/<%= gig.image %>"
+                                    alt="<%= gig.title %>"
+                                    class="gig-image"
+                                >
+                            <% } %>
+
+                            <h3><%= gig.title %></h3>
+
+                            <p><%= gig.description %></p>
+
+                            <p>
+                                <strong>Payment:</strong>
+                                $<%= gig.cash %>
+                            </p>
+
+                            <p>
+                                <span class="gig-category">
+                                    <%= gig.category %>
+                                </span>
+                            </p>
+
+                            <p>
+                                <span class="gig-status">
+                                    <%= gig.status %>
+                                </span>
+                            </p>
+
+                            <a
+                                href="/gig/<%= gig.gig_id %>"
+                                class="btn btn-primary"
+                            >
+                                View Details
+                            </a>
+
+                        </div>
+                    </div>
+
+                <% }) %>
+
+            </div>
+
+            <div
+                id="noResultsMessage"
+                class="no-results-message"
+            >
+                <p class="mb-0">
+                    No accepted gigs match your search.
+                </p>
+            </div>
+
         <% } %>
-        <a href="/logout" class="btn btn-primary">Logout</a>
+
     </div>
+
+    <script>
+        const searchInput = document.getElementById('gigSearch');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const paymentSort = document.getElementById('paymentSort');
+        const gigContainer = document.getElementById('gigContainer');
+        const noResultsMessage =
+            document.getElementById('noResultsMessage');
+
+        function updateGigs() {
+            const searchText = searchInput.value.toLowerCase().trim();
+            const selectedCategory = categoryFilter.value;
+            const selectedSort = paymentSort.value;
+
+            const gigItems = Array.from(
+                document.querySelectorAll('.gig-item')
+            );
+
+            let visibleGigs = 0;
+
+            gigItems.forEach(gig => {
+                const title = gig.dataset.title;
+                const category = gig.dataset.category;
+
+                const matchesSearch =
+                    title.includes(searchText);
+
+                const matchesCategory =
+                    selectedCategory === 'all' ||
+                    category === selectedCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    gig.style.display = 'block';
+                    visibleGigs++;
+                } else {
+                    gig.style.display = 'none';
+                }
+            });
+
+            const visibleItems = gigItems.filter(
+                gig => gig.style.display !== 'none'
+            );
+
+            if (selectedSort === 'high') {
+                visibleItems.sort((firstGig, secondGig) => {
+                    return Number(secondGig.dataset.payment) -
+                        Number(firstGig.dataset.payment);
+                });
+            }
+
+            if (selectedSort === 'low') {
+                visibleItems.sort((firstGig, secondGig) => {
+                    return Number(firstGig.dataset.payment) -
+                        Number(secondGig.dataset.payment);
+                });
+            }
+
+            visibleItems.forEach(gig => {
+                gigContainer.appendChild(gig);
+            });
+
+            if (visibleGigs === 0) {
+                noResultsMessage.style.display = 'block';
+            } else {
+                noResultsMessage.style.display = 'none';
+            }
+        }
+
+        if (searchInput && categoryFilter && paymentSort) {
+            searchInput.addEventListener('input', updateGigs);
+            categoryFilter.addEventListener('change', updateGigs);
+            paymentSort.addEventListener('change', updateGigs);
+        }
+    </script>
 </body>
 </html>
