@@ -5,11 +5,12 @@ const session = require('express-session');
 const flash = require('connect-flash');
 const app = express();
 
+// --- DATABASE CONNECTION ---
 const db = mysql.createConnection({
-    host: 'c237-eaint-mysql.mysql.database.azure.com',
-    user: 'c237_001',
-    password: 'c237001@2026!',
-    database: 'c237_001_teamrepublic',
+    host: process.env.DB_HOST || 'c237-eaint-mysql.mysql.database.azure.com',
+    user: process.env.DB_USER || 'c237_001',
+    password: process.env.DB_PASSWORD || 'c237001@2026!',
+    database: process.env.DB_NAME || 'c237_001_teamrepublic',
     ssl: {
         rejectUnauthorized: true
     }
@@ -17,36 +18,40 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
+        console.error('Database connection failed:', err);
         throw err;
     }
-    console.log('Connected to database');
+    console.log('Connected to MySQL database successfully.');
 });
 
-// Middleware setup
+// --- MIDDLEWARE SETUP ---
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(express.static('public'));
 
 app.use(session({
-    secret: 'secret',
+    secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 7 days
 }));
 
 app.use(flash());
 app.set('view engine', 'ejs');
 
-// Import auth routes and the shared middleware function
+// --- AUTH & ROUTE MODULE IMPORT ---
 const authModule = require('./authRoutes')(db);
 const authRoutes = authModule.router;
 const checkAuthenticated = authModule.checkAuthenticated;
 const checkAdmin = authModule.checkAdmin;
 
-// --- APP & FEATURE ROUTES ---
+// --- GIG & REPORT ROUTES ---
 
+// View specific gig details
 app.get('/gig/:id', checkAuthenticated, (req, res) => {
     const gigId = req.params.id;
     const sql = "SELECT * FROM gigs WHERE gig_id = ?";
+    
     db.query(sql, [gigId], (err, results) => {
         if (err) {
             console.error('Error fetching gig:', err);
@@ -54,7 +59,7 @@ app.get('/gig/:id', checkAuthenticated, (req, res) => {
             return res.redirect('/home');
         }
         if (results.length === 0) {
-            return res.send("Gig not found");
+            return res.status(404).send("Gig not found");
         }
         res.render('gig', {
             user: req.session.user,
@@ -63,6 +68,7 @@ app.get('/gig/:id', checkAuthenticated, (req, res) => {
     });
 });
 
+// Load gig report page
 app.get('/report/:id', checkAuthenticated, (req, res) => {
     const gigId = req.params.id;
 
@@ -77,7 +83,7 @@ app.get('/report/:id', checkAuthenticated, (req, res) => {
             }
 
             if (results.length === 0) {
-                return res.send("Gig not found");
+                return res.status(404).send("Gig not found");
             }
 
             res.render('report', {
@@ -87,11 +93,12 @@ app.get('/report/:id', checkAuthenticated, (req, res) => {
     );
 });
 
+// Submit a gig report
 app.post('/report', checkAuthenticated, (req, res) => {
     const reason = req.body.reason;
     const comment = req.body.comment;
     const gigId = req.body.gig_id;
-    const userId = req.session.user.id;
+    const userId = req.session.user ? req.session.user.id : null;
 
     if (!userId) {
         req.flash('error', 'Please log in again to submit a report.');
@@ -119,36 +126,32 @@ app.post('/report', checkAuthenticated, (req, res) => {
     );
 });
 
-app.use('/', authRoutes);
+// --- ADMIN API ROUTES ---
 
-//Admin
+// API Endpoint for Admin Dashboard Pie Chart
 app.get('/api/gig-category-chart', checkAdmin, (req, res) => {
-
     const sql = `
-        SELECT category,
-               COUNT(*) AS total
+        SELECT category, COUNT(*) AS total
         FROM gigs
         GROUP BY category
     `;
 
     db.query(sql, (err, results) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json(err);
+            console.error('Error fetching gig categories for chart:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
 
         res.json(results);
     });
-
 });
 
-//******** TODO: Insert code for logout route ********//
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/login');
-});
+// --- AUTH & USER MANAGEMENT ROUTES ---
+// Mount authentication, admin panel, search, filter, and ban/unban routes
+app.use('/', authRoutes);
 
-// Starting the server
-app.listen(3000, () => {
-    console.log('Server started on port 3000');
+// --- SERVER INITIALIZATION ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
 });
