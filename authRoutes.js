@@ -194,8 +194,77 @@ module.exports = function(db) {
     });
 
     router.get('/admin', checkAdmin, (req, res) => {
-        res.render('admin', { user: req.session.user });
+        const sql = "SELECT * FROM reports WHERE status = 'pending'";
+
+        db.query(sql, (err, reports) => {
+
+            if (err) {
+                console.error('Error fetching reports:', err);
+                return res.send('Error loading reports');
+            }
+
+            res.render('admin', {user: req.session.user,reports: reports});
+
+        });
+
     });
+
+    router.post('/admin/reports/:id/accept', checkAdmin, (req, res) => {
+        const reportId = req.params.id;
+        const getReportSql = 'SELECT gig_id FROM reports WHERE report_id = ?';
+
+        db.query(getReportSql, [reportId], (err, results) => {
+
+            if (err) {
+                console.error('Error finding report:', err);
+                return res.send('Error accepting report');
+            }
+
+            if (results.length === 0) {
+                return res.send('Report not found');
+            }
+
+            const gigId = results[0].gig_id;
+            const deleteGigSql = 'DELETE FROM gigs WHERE gig_id = ?';
+
+            db.query(deleteGigSql, [gigId], (err) => {
+
+                if (err) {
+                    console.error('Error deleting gig:', err);
+                    return res.send('Error deleting gig');
+                }
+
+                const updateReportSql =
+                    "UPDATE reports SET status = 'accepted' WHERE report_id = ?";
+
+                db.query(updateReportSql, [reportId], (err) => {
+
+                    if (err) {
+                        console.error('Error updating report:', err);
+                        return res.send('Error updating report');
+                    }
+
+                    res.redirect('/admin');
+                });
+
+            });
+
+        });
+
+    });
+
+    router.post('/admin/reports/:id/deny', checkAdmin, (req, res) => {
+        const reportId = req.params.id;
+        const sql ="UPDATE reports SET status = 'denied' WHERE report_id = ?";
+
+        db.query(sql, [reportId], (err) => {
+            if (err) {
+                console.error('Error denying report:', err);
+                return res.send('Error denying report');
+            }
+            res.redirect('/admin');
+        });
+});
 
     router.get('/logout', (req, res) => {
         req.session.destroy();
