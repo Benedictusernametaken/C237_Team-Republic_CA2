@@ -119,6 +119,7 @@
             </div>
 
             <div>
+                <a href="/jobs/create" class="btn btn-success">Create Gig</a>
                 <a href="/home" class="btn btn-secondary">Home</a>
 
                 <% if (user.role === 'admin') { %>
@@ -130,6 +131,14 @@
                 <a href="/logout" class="btn btn-danger">Logout</a>
             </div>
         </div>
+
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success"><%= messages[0] %></div>
+        <% } %>
+
+        <% if (errors && errors.length > 0) { %>
+            <div class="alert alert-danger"><%= errors[0] %></div>
+        <% } %>
 
         <div class="row mb-4">
 
@@ -193,6 +202,50 @@
                 </div>
             </div>
         </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>My Created Gigs</h2>
+            <a href="/jobs/create" class="btn btn-success">Create Gig</a>
+        </div>
+
+        <% if (!createdGigs || createdGigs.length === 0) { %>
+            <div class="empty-message mb-4">
+                <p class="mb-0">You have not created any gigs yet.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive mb-5">
+                <table class="table table-bordered table-hover bg-white">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Accepted By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% createdGigs.forEach(gig => { %>
+                            <tr>
+                                <td><%= gig.title %></td>
+                                <td><%= gig.category %></td>
+                                <td>$<%= gig.cash %></td>
+                                <td class="text-capitalize"><%= gig.status %></td>
+                                <td><%= gig.accepted_by || 'Not accepted' %></td>
+                                <td>
+                                    <a href="/gig/<%= gig.gig_id %>" class="btn btn-sm btn-info">View</a>
+                                    <a href="/jobs/edit/<%= gig.gig_id %>" class="btn btn-sm btn-primary">Edit</a>
+                                    <form action="/jobs/delete/<%= gig.gig_id %>" method="POST" class="d-inline" onsubmit="return confirm('Delete this gig?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
 
         <h2 class="mb-3">My Accepted Gigs</h2>
 

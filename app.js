@@ -44,6 +44,140 @@ const checkAdmin = authModule.checkAdmin;
 
 // --- APP & FEATURE ROUTES ---
 
+const validateGig = (req, res, next) => {
+    const gig = {
+        title: req.body.title ? req.body.title.trim() : '',
+        description: req.body.description ? req.body.description.trim() : '',
+        cash: req.body.cash ? req.body.cash.trim() : '',
+        image: req.body.image ? req.body.image.trim() : '',
+        category: req.body.category ? req.body.category.trim() : ''
+    };
+
+    let error;
+    if (!gig.title || !gig.description || !gig.cash || !gig.image || !gig.category) {
+        error = 'Please fill in all fields.';
+    } else if (gig.title.length > 45 || gig.category.length > 45) {
+        error = 'The title and category must each be 45 characters or fewer.';
+    } else if (gig.description.length > 1000 || gig.image.length > 1000) {
+        error = 'The description and image filename must each be 1000 characters or fewer.';
+    } else if (!Number.isInteger(Number(gig.cash)) || Number(gig.cash) <= 0) {
+        error = 'Payment must be a whole number greater than $0.';
+    }
+
+    req.gig = gig;
+    req.gigValidationError = error;
+    next();
+};
+
+app.get('/jobs/create', checkAuthenticated, (req, res) => {
+    res.render('job-create', {
+        user: req.session.user,
+        errors: req.flash('error'),
+        formData: req.flash('formData')[0] || {}
+    });
+});
+
+app.post('/jobs/create', checkAuthenticated, validateGig, (req, res) => {
+    if (req.gigValidationError) {
+        req.flash('error', req.gigValidationError);
+        req.flash('formData', req.gig);
+        return res.redirect('/jobs/create');
+    }
+
+    const { title, description, cash, image, category } = req.gig;
+    const creatorId = req.session.user.id;
+    const sql = `
+        INSERT INTO gigs
+            (gig_id, creator_id, accepted_by, title, description, cash, image, category, status)
+        SELECT COALESCE(MAX(gig_id), 0) + 1, ?, NULL, ?, ?, ?, ?, ?, 'open'
+        FROM gigs
+    `;
+
+    db.query(sql, [creatorId, title, description, cash, image, category], (err) => {
+        if (err) {
+            console.error('Error creating gig:', err);
+            req.flash('error', 'Unable to create the gig. Please try again.');
+            req.flash('formData', req.gig);
+            return res.redirect('/jobs/create');
+        }
+
+        req.flash('success', 'Gig created successfully.');
+        res.redirect('/home');
+    });
+});
+
+app.get('/jobs/edit/:id', checkAuthenticated, (req, res) => {
+    const sql = 'SELECT * FROM gigs WHERE gig_id = ? AND creator_id = ?';
+    db.query(sql, [req.params.id, req.session.user.id], (err, results) => {
+        if (err) {
+            console.error('Error loading gig for editing:', err);
+            req.flash('error', 'Unable to load the gig.');
+            return res.redirect('/home');
+        }
+        if (results.length === 0) {
+            req.flash('error', 'Gig not found or you do not have permission to edit it.');
+            return res.redirect('/home');
+        }
+
+        res.render('job-edit', {
+            user: req.session.user,
+            gig: results[0],
+            errors: req.flash('error')
+        });
+    });
+});
+
+app.post('/jobs/edit/:id', checkAuthenticated, validateGig, (req, res) => {
+    if (req.gigValidationError) {
+        req.flash('error', req.gigValidationError);
+        return res.redirect(`/jobs/edit/${req.params.id}`);
+    }
+
+    const { title, description, cash, image, category } = req.gig;
+    const sql = `
+        UPDATE gigs
+        SET title = ?, description = ?, cash = ?, image = ?, category = ?
+        WHERE gig_id = ? AND creator_id = ?
+    `;
+    const params = [
+        title, description, cash, image, category,
+        req.params.id, req.session.user.id
+    ];
+
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            console.error('Error updating gig:', err);
+            req.flash('error', 'Unable to update the gig. Please try again.');
+            return res.redirect(`/jobs/edit/${req.params.id}`);
+        }
+        if (result.affectedRows === 0) {
+            req.flash('error', 'Gig not found or you do not have permission to edit it.');
+            return res.redirect('/home');
+        }
+
+        req.flash('success', 'Gig updated successfully.');
+        res.redirect('/home');
+    });
+});
+
+app.post('/jobs/delete/:id', checkAuthenticated, (req, res) => {
+    const sql = 'DELETE FROM gigs WHERE gig_id = ? AND creator_id = ?';
+    db.query(sql, [req.params.id, req.session.user.id], (err, result) => {
+        if (err) {
+            console.error('Error deleting gig:', err);
+            req.flash('error', 'Unable to delete the gig. It may already have related activity.');
+            return res.redirect('/home');
+        }
+        if (result.affectedRows === 0) {
+            req.flash('error', 'Gig not found or you do not have permission to delete it.');
+            return res.redirect('/home');
+        }
+
+        req.flash('success', 'Gig deleted successfully.');
+        res.redirect('/home');
+    });
+});
+
 app.get('/gig/:id', checkAuthenticated, (req, res) => {
     const gigId = req.params.id;
     const sql = "SELECT * FROM gigs WHERE gig_id = ?";
@@ -180,6 +314,7 @@ app.get('/logout', (req, res) => {
 });
 
 // Starting the server
-app.listen(3000, () => {
-    console.log('Server started on port 3000');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server started on port ${port}`);
 });
