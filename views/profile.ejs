@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { pageTitle: 'Profile' }) %>
+</head>
+<body>
+
+<%- include('partials/navbar', { user: user, activePage: 'profile' }) %>
+
+<main class="container page-shell">
+    <% if (messages && messages.length > 0) { %>
+        <div class="alert alert-success">
+            <% messages.forEach(function(message) { %>
+                <p class="mb-0"><%= message %></p>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <% if (errors && errors.length > 0) { %>
+        <div class="alert alert-danger">
+            <% errors.forEach(function(error) { %>
+                <p class="mb-0"><%= error %></p>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <div class="dashboard-header">
+        <span class="auth-eyebrow">My account</span>
+        <h1>Welcome, <%= user.username %></h1>
+        <p>View your profile, posted gigs and accepted gigs.</p>
+
+        <% if (user.role === 'admin') { %>
+            <a href="/admin" class="btn btn-warning">
+                Open Admin Dashboard
+            </a>
+        <% } %>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="summary-card">
+                <h3>Posted Gigs</h3>
+                <p class="summary-number"><%= createdGigs.length %></p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="summary-card">
+                <h3>Accepted Gigs</h3>
+                <p class="summary-number"><%= acceptedGigs.length %></p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="summary-card">
+                <h3>Account Role</h3>
+                <p class="summary-number text-capitalize"><%= user.role %></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-card">
+        <h2 class="h4">Profile Information</h2>
+        <hr>
+
+        <div class="row">
+            <div class="col-md-6">
+                <p><span class="profile-label">Username:</span> <%= user.username %></p>
+                <p><span class="profile-label">Email:</span> <%= user.email %></p>
+                <p><span class="profile-label">Role:</span> <%= user.role %></p>
+            </div>
+
+            <div class="col-md-6">
+                <p><span class="profile-label">Address:</span> <%= user.address %></p>
+                <p><span class="profile-label">Contact:</span> <%= user.contact %></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+        <div>
+            <h2>My Posted Gigs</h2>
+            <p>These are the gigs you created.</p>
+        </div>
+        <a href="/post" class="btn btn-success">Post Gig</a>
+    </div>
+
+    <% if (createdGigs.length === 0) { %>
+        <div class="empty-message mb-5">
+            <p class="mb-0">You have not posted any gigs yet.</p>
+        </div>
+    <% } else { %>
+        <div class="table-responsive mb-5">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% createdGigs.forEach(function(gig) { %>
+                        <tr>
+                            <td><%= gig.title %></td>
+                            <td><%= gig.category %></td>
+                            <td>$<%= gig.cash %></td>
+                            <td><%= gig.status %></td>
+                            <td>
+                                <a href="/gig/<%= gig.gig_id %>" class="btn btn-primary btn-sm">
+                                    View
+                                </a>
+
+                                <form
+                                    action="/gig/<%= gig.gig_id %>/delete"
+                                    method="POST"
+                                    class="d-inline"
+                                    onsubmit="return confirm('Delete this gig?')"
+                                >
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    <% } %>
+
+    <div class="page-heading">
+        <h2>My Accepted Gigs</h2>
+        <p>These are the gigs you accepted.</p>
+    </div>
+
+    <% if (acceptedGigs.length === 0) { %>
+        <div class="empty-message">
+            <p class="mb-0">You have not accepted any gigs yet.</p>
+        </div>
+    <% } else { %>
+        <div class="row">
+            <% acceptedGigs.forEach(function(gig) { %>
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="gig-card">
+                        <% if (gig.image) { %>
+                            <img
+                                src="/images/<%= gig.image %>"
+                                alt="<%= gig.title %>"
+                                class="gig-image"
+                            >
+                        <% } %>
+
+                        <h3><%= gig.title %></h3>
+                        <p><%= gig.description %></p>
+                        <p><strong class="text-white">Payment:</strong> $<%= gig.cash %></p>
+                        <p><strong class="text-white">Category:</strong> <%= gig.category %></p>
+
+                        <a href="/gig/<%= gig.gig_id %>" class="btn btn-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    <% } %>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

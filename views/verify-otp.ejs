@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { pageTitle: 'Verify Login' }) %>
+</head>
+<body>
+
+<%- include('partials/navbar', { user: null, activePage: '' }) %>
+
+<main class="container page-shell">
+    <div class="auth-card">
+        <span class="auth-eyebrow">Security check</span>
+        <h1 class="auth-title">Enter Verification Code</h1>
+
+        <p>
+            A 6-digit code was sent to
+            <strong class="text-white"><%= maskedEmail %></strong>.
+            The code expires in 5 minutes.
+        </p>
+
+        <% if (errors && errors.length > 0) { %>
+            <div class="alert alert-danger">
+                <% errors.forEach(error => { %>
+                    <p class="mb-0"><%= error %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success">
+                <% messages.forEach(message => { %>
+                    <p class="mb-0"><%= message %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <form action="/verify-otp" method="POST">
+            <div class="mb-4">
+                <label for="otp_code">Verification Code</label>
+                <input
+                    type="text"
+                    id="otp_code"
+                    name="otp_code"
+                    class="form-control otp-input"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    minlength="6"
+                    maxlength="6"
+                    placeholder="000000"
+                    autocomplete="one-time-code"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="auth-actions">
+                <button type="submit" class="btn btn-primary">
+                    Verify and Login
+                </button>
+            </div>
+        </form>
+
+        <form action="/verify-otp/resend" method="POST" class="mt-3">
+            <button type="submit" class="btn btn-secondary">
+                Send New Code
+            </button>
+
+            <a href="/login" class="btn btn-secondary">
+                Back to Login
+            </a>
+        </form>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
