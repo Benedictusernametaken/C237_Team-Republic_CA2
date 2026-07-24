@@ -8,41 +8,18 @@
 <%- include('partials/navbar', { user: user, activePage: 'home' }) %>
 
 <main class="container page-shell">
-    <% if (messages && messages.length > 0) { %>
-        <div class="alert alert-success">
-            <% messages.forEach(message => { %>
-                <p class="mb-0"><%= message %></p>
-            <% }) %>
-        </div>
-    <% } %>
-
-    <% if (errors && errors.length > 0) { %>
-        <div class="alert alert-danger">
-            <% errors.forEach(error => { %>
-                <p class="mb-0"><%= error %></p>
-            <% }) %>
-        </div>
-    <% } %>
 
     <div class="page-heading">
-        <span class="auth-eyebrow">Gig information</span>
         <h1>Gig Details</h1>
-        <p>Review the full information before taking action.</p>
+        <p>Read details before accepting.</p>
     </div>
-
     <div class="card detail-card">
         <% if (gig.image) { %>
-            <img
-                src="/images/<%= gig.image %>"
-                class="card-img-top"
-                alt="<%= gig.title %>"
-                style="height: 350px;"
-            >
+            <img src="/images/<%= gig.image %>" class="card-img-top" alt="<%= gig.title %>" style="height: 350px;">
         <% } %>
 
         <div class="card-body">
             <h2><%= gig.title %></h2>
-
             <div class="detail-meta">
                 <span class="meta-pill"><%= gig.category %></span>
                 <span class="gig-status"><%= gig.status %></span>
@@ -57,16 +34,21 @@
             </p>
 
             <div class="mt-4 d-flex flex-wrap gap-2">
+
                 <% if (gig.status === 'open' && !gig.accepted_by) { %>
+
                     <form action="/gig/<%= gig.gig_id %>/accept" method="POST">
                         <button type="submit" class="btn btn-primary">
                             Accept Gig
                         </button>
                     </form>
+
                 <% } else { %>
+
                     <button type="button" class="btn btn-secondary" disabled>
                         Gig Unavailable
                     </button>
+
                 <% } %>
 
                 <a href="/report/<%= gig.gig_id %>" class="btn btn-danger">
@@ -76,11 +58,16 @@
                 <a href="/home" class="btn btn-secondary">
                     Back to Home
                 </a>
+
             </div>
+
         </div>
+
     </div>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
