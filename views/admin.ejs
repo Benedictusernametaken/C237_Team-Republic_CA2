@@ -1,82 +1,303 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
-
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-
+    <%- include('partials/head', { pageTitle: 'Admin Dashboard' }) %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
-<div class="container mt-5">
+<%- include('partials/navbar', { user: user, activePage: 'profile' }) %>
 
-    <h1>Admin Dashboard</h1>
+<main class="container page-shell">
+    <% if (messages && messages.length > 0) { %>
+        <div class="alert alert-success">
+            <% messages.forEach(message => { %>
+                <p class="mb-0"><%= message %></p>
+            <% }) %>
+        </div>
+    <% } %>
 
-    <p>
-        Welcome,
-        <%= user.username %>
-        (<%= user.role %>)
-    </p>
+    <% if (errors && errors.length > 0) { %>
+        <div class="alert alert-danger">
+            <% errors.forEach(error => { %>
+                <p class="mb-0"><%= error %></p>
+            <% }) %>
+        </div>
+    <% } %>
 
-    <hr>
-
-    <h3>Gig Categories</h3>
-
-    <canvas id="categoryChart" width="500" height="500"></canvas>
-
-    <br>
-
-    <a href="/logout" class="btn btn-primary">
-        Logout
+    <a href="/profile" class="btn btn-secondary mb-4">
+        Back to Profile
     </a>
 
-</div>
+    <div class="admin-heading">
+        <span class="auth-eyebrow">Admin area</span>
+        <h1>Admin Dashboard</h1>
+        <p>
+            Welcome, <strong class="text-white"><%= user.username %></strong>
+        </p>
+    </div>
+
+    <!-- Total and average calculations based on the CA1 dashboard idea -->
+    <section class="admin-stats">
+        <div class="summary-card">
+            <h3>Total Users</h3>
+            <p class="summary-number"><%= totalUsers %></p>
+            <p class="stat-note mb-0">Non-admin accounts</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Average Gigs Posted Per User</h3>
+            <p class="summary-number"><%= averageGigsPerUser %></p>
+            <p class="stat-note mb-0">
+                <%= totalGigs %> total gigs ÷ <%= totalUsers %> users
+            </p>
+        </div>
+    </section>
+
+    <div class="chart-grid">
+        <section class="chart-panel">
+            <h2 class="h4">Gig Categories</h2>
+            <p>Distribution of gigs across each category.</p>
+
+            <div class="chart-wrap">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-panel">
+            <h2 class="h4">User Activity</h2>
+            <p>
+                Non-admin users grouped by posting and accepting activity.
+            </p>
+
+            <div class="chart-wrap">
+                <canvas id="userActivityChart"></canvas>
+            </div>
+
+            <p class="chart-note mb-0">
+                Each non-admin user is counted once: posted only,
+                accepted only, both, or no activity.
+            </p>
+        </section>
+    </div>
+
+    <section class="user-panel">
+        <h2 class="h4">User Accounts</h2>
+        <p>View and delete registered accounts.</p>
+
+        <% if (!users || users.length === 0) { %>
+            <div class="empty-message">
+                <p class="mb-0">No user accounts found.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% users.forEach(account => { %>
+                            <tr>
+                                <td><%= account.id %></td>
+                                <td><%= account.username %></td>
+                                <td>
+                                    <span class="role-badge">
+                                        <%= account.role || 'user' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (Number(account.id) === Number(user.id)) { %>
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary btn-sm"
+                                            disabled
+                                        >
+                                            Current Account
+                                        </button>
+                                    <% } else { %>
+                                        <form
+                                            action="/admin/users/<%= account.id %>/delete"
+                                            method="POST"
+                                            onsubmit="return confirm('Delete <%= account.username %>? This cannot be undone.')"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-danger btn-sm"
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </section>
+
+    <section class="report-panel">
+        <h2 class="h4">Pending Reports</h2>
+        <p>Review reports submitted by users.</p>
+
+        <% if (!reports || reports.length === 0) { %>
+            <div class="empty-message">
+                <p class="mb-0">No pending reports.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Report ID</th>
+                            <th>Reason</th>
+                            <th>Comment</th>
+                            <th>Gig ID</th>
+                            <th>User ID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% reports.forEach(report => { %>
+                            <tr>
+                                <td><%= report.report_id %></td>
+                                <td><%= report.reason %></td>
+                                <td><%= report.comment || 'No comment' %></td>
+                                <td>
+                                    <a href="/gig/<%= report.gig_id %>">
+                                        <%= report.gig_id %>
+                                    </a>
+                                </td>
+                                <td><%= report.user_id %></td>
+                                <td>
+                                    <span class="report-status">
+                                        <%= report.status %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="report-actions">
+                                        <form
+                                            action="/admin/reports/<%= report.report_id %>/accept"
+                                            method="POST"
+                                        >
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                Accept
+                                            </button>
+                                        </form>
+
+                                        <form
+                                            action="/admin/reports/<%= report.report_id %>/deny"
+                                            method="POST"
+                                        >
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                Deny
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </section>
+</main>
 
 <script>
+    fetch('/api/gig-category-chart')
+        .then(response => response.json())
+        .then(data => {
+            const labels = data.map(item => item.category || 'Uncategorised');
+            const totals = data.map(item => item.total);
 
-fetch('/api/gig-category-chart')
-.then(response => response.json())
-.then(data => {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: totals,
+                        backgroundColor: [
+                            '#6257ff',
+                            '#4ea1ff',
+                            '#f35482',
+                            '#ffad22',
+                            '#35c98b',
+                            '#9478ff'
+                        ],
+                        borderColor: '#22304f',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#f5f7ff',
+                                padding: 14
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Unable to load category chart:', error);
+        });
 
-    const labels = data.map(item => item.category);
-    const totals = data.map(item => item.total);
+    const userActivity = <%- JSON.stringify(userActivity) %>;
 
-    new Chart(document.getElementById('categoryChart'), {
-
-        type: 'pie',
-
+    new Chart(document.getElementById('userActivityChart'), {
+        type: 'doughnut',
         data: {
-            labels: labels,
-
+            labels: [
+                'Posted Only',
+                'Accepted Only',
+                'Posted and Accepted',
+                'No Activity'
+            ],
             datasets: [{
-                data: totals
+                data: [
+                    userActivity.postedOnlyUsers,
+                    userActivity.acceptedOnlyUsers,
+                    userActivity.bothUsers,
+                    userActivity.inactiveUsers
+                ],
+                backgroundColor: [
+                    '#6257ff',
+                    '#35c98b',
+                    '#f35482',
+                    '#aeb9d5'
+                ],
+                borderColor: '#22304f',
+                borderWidth: 4
             }]
         },
-
         options: {
             responsive: true,
-
+            maintainAspectRatio: false,
             plugins: {
-
-                title: {
-                    display: true,
-                    text: 'Gig Categories'
-                },
-
                 legend: {
-                    position: 'right'
+                    position: 'bottom',
+                    labels: {
+                        color: '#f5f7ff',
+                        padding: 14
+                    }
                 }
-
             }
         }
-
     });
-
-});
-
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

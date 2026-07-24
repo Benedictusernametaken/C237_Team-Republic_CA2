@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { pageTitle: 'Post Gig' }) %>
+</head>
+<body>
+
+<%- include('partials/navbar', { user: user, activePage: 'post' }) %>
+
+<main class="container page-shell">
+    <div class="auth-card mx-auto" style="max-width: 720px;">
+        <div class="page-heading">
+            <span class="auth-eyebrow">Create a new listing</span>
+            <h1>Post Gig</h1>
+            <p>Enter the gig details below.</p>
+        </div>
+
+        <% if (errors && errors.length > 0) { %>
+            <div class="alert alert-danger">
+                <% errors.forEach(function(error) { %>
+                    <p class="mb-0"><%= error %></p>
+                <% }); %>
+            </div>
+        <% } %>
+
+        <form action="/post" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" class="form-control" rows="5" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="cash">Payment:</label>
+                <input type="number" id="cash" name="cash" class="form-control" min="1" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="category">Category:</label>
+                <select id="category" name="category" class="form-select" required>
+                    <option value="">Select Category</option>
+                    <option value="Home & Personal Services">Home & Personal Services</option>
+                    <option value="Technology Support">Technology Support</option>
+                    <option value="Delivery">Delivery</option>
+                    <option value="Creative Services">Creative Services</option>
+                    <option value="Event Assistance">Event Assistance</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="image">Image:</label>
+                <input type="file" id="image" name="image" class="form-control" accept="image/*" required>
+            </div>
+
+            <button type="submit" class="btn btn-success">
+                Post Gig
+            </button>
+        </form>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

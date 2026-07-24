@@ -1,54 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Register</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <%- include('partials/head', { pageTitle: 'Register' }) %>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Register</h1>
+
+<%- include('partials/navbar', { user: null, activePage: '' }) %>
+
+<main class="container page-shell">
+    <div class="auth-card">
+        <span class="auth-eyebrow">Join GigRunners</span>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="mb-4">Register to browse and report available gigs.</p>
+
         <% if (messages && messages.length > 0) { %>
             <div class="alert alert-danger">
-                <% messages.forEach(function(message) { %>
-                    <p><%= message %></p>
-                <% }); %>
+                <% messages.forEach(message => { %>
+                    <p class="mb-0"><%= message %></p>
+                <% }) %>
             </div>
         <% } %>
-        <form action="/register" method="POST" class="mt-4">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" class="form-control" required 
-                <% if (formData && formData.username) { %> value="<%= formData.username %>" <% } else { %> value="" <% } %>>
-            </div>
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" class="form-control" required 
-                <% if (formData && formData.email) { %> value="<%= formData.email %>" <% } else { %> value="" <% } %>>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="address">Address:</label>
-                <input type="text" id="address" name="address" class="form-control" required 
-                <% if (formData && formData.address) { %> value="<%= formData.address %>" <% } else { %> value="" <% } %>>
-            </div>
-            <div class="form-group">
-                <label for="contact">Contact Number:</label>
-                <input type="text" id="contact" name="contact" class="form-control" required 
-                <% if (formData && formData.contact) { %> value="<%= formData.contact %>" <% } else { %> value="" <% } %>>
-            </div>
-            <div class="form-group">
-                <label for="role">Role:</label>
-                <select id="role" name="role" class="form-control" required>
-                    <option value="user" <% if (formData && formData.role === 'user') { %> selected <% } %>>User</option>
-                    <option value="admin" <% if (formData && formData.role === 'admin') { %> selected <% } %>>Admin</option>
-                </select>
+
+        <form action="/register" method="POST">
+            <div class="mb-3">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="form-control"
+                    value="<%= formData.username || '' %>"
+                    placeholder="Choose a username"
+                    required
+                >
             </div>
 
-            <button type="submit" class="btn btn-primary">Register</button>
+            <div class="mb-3">
+                <label for="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    value="<%= formData.email || '' %>"
+                    placeholder="Enter your email"
+                    required
+                >
+            </div>
+
+            <div class="mb-3">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    minlength="6"
+                    placeholder="At least 6 characters"
+                    required
+                >
+            </div>
+
+            <div class="mb-3">
+                <label for="address">Address</label>
+                <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    class="form-control"
+                    value="<%= formData.address || '' %>"
+                    placeholder="Enter your address"
+                    required
+                >
+            </div>
+
+            <div class="mb-4">
+                <label for="contact">Contact Number</label>
+                <input
+                    type="text"
+                    id="contact"
+                    name="contact"
+                    class="form-control"
+                    value="<%= formData.contact || '' %>"
+                    placeholder="Enter your contact number"
+                    required
+                >
+            </div>
+
+            <div class="auth-actions">
+                <button type="submit" class="btn btn-primary">
+                    Register
+                </button>
+
+                <a href="/login" class="btn btn-secondary">
+                    Back to Login
+                </a>
+            </div>
         </form>
     </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

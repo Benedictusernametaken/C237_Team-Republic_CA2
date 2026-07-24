@@ -1,63 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Gig Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <%- include('partials/head', { pageTitle: 'Gig Details' }) %>
 </head>
 <body>
-    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">App</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="collapsibleNavbar">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                </ul>
-            </div>
+
+<%- include('partials/navbar', { user: user, activePage: 'home' }) %>
+
+<main class="container page-shell">
+    <% if (messages && messages.length > 0) { %>
+        <div class="alert alert-success">
+            <% messages.forEach(message => { %>
+                <p class="mb-0"><%= message %></p>
+            <% }) %>
         </div>
-    </nav>
-    
-<div class="container mt-5">
-    <h2 class="mb-4">Gig Details</h2>
-    <div class="card">
-        <img src="/images/<%= gig.image %>"
-             class="card-img-top"
-             style="height:350px; object-fit:cover;">
+    <% } %>
+
+    <% if (errors && errors.length > 0) { %>
+        <div class="alert alert-danger">
+            <% errors.forEach(error => { %>
+                <p class="mb-0"><%= error %></p>
+            <% }) %>
+        </div>
+    <% } %>
+
+    <div class="page-heading">
+        <span class="auth-eyebrow">Gig information</span>
+        <h1>Gig Details</h1>
+        <p>Review the full information before taking action.</p>
+    </div>
+
+    <div class="card detail-card">
+        <% if (gig.image) { %>
+            <img
+                src="/images/<%= gig.image %>"
+                class="card-img-top"
+                alt="<%= gig.title %>"
+                style="height: 350px;"
+            >
+        <% } %>
+
         <div class="card-body">
-            <h3><%= gig.title %></h3>
+            <h2><%= gig.title %></h2>
+
+            <div class="detail-meta">
+                <span class="meta-pill"><%= gig.category %></span>
+                <span class="gig-status"><%= gig.status %></span>
+                <span class="meta-pill">$<%= gig.cash %></span>
+            </div>
+
             <hr>
+
             <p>
-                <strong>Description:</strong><br>
+                <strong class="text-white">Description:</strong><br>
                 <%= gig.description %>
             </p>
-            <p>
-                <strong>Category:</strong>
-                <%= gig.category %>
-            </p>
-            <p>
-                <strong>Price:</strong>
-                $<%= gig.cash %>
-            </p>
-            <p>
-                <strong>Status:</strong>
-                <%= gig.status %>
-            </p>
 
-            <div class="mt-3">
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <% if (gig.status === 'open' && !gig.accepted_by) { %>
+                    <form action="/gig/<%= gig.gig_id %>/accept" method="POST">
+                        <button type="submit" class="btn btn-primary">
+                            Accept Gig
+                        </button>
+                    </form>
+                <% } else { %>
+                    <button type="button" class="btn btn-secondary" disabled>
+                        Gig Unavailable
+                    </button>
+                <% } %>
+
                 <a href="/report/<%= gig.gig_id %>" class="btn btn-danger">
                     Report Gig
                 </a>
-                
+
                 <a href="/home" class="btn btn-secondary">
                     Back to Home
                 </a>
             </div>
         </div>
     </div>
-</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
