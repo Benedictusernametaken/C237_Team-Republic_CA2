@@ -183,13 +183,36 @@ module.exports = function(db) {
     // --- PROTECTED DASHBOARD & ADMIN ROUTES ---
 
     router.get('/home', checkAuthenticated, (req, res) => {
-        db.query('SELECT * FROM gigs', (err, gigs) => {
+        const acceptedSql = 'SELECT * FROM gigs WHERE accepted_by = ? ORDER BY gig_id DESC';
+        db.query(acceptedSql, [req.session.user.id], (err, gigs) => {
             if (err) {
-                console.error('Error fetching gigs for dashboard:', err);
+                console.error('Error fetching accepted gigs for dashboard:', err);
                 req.flash('error', 'Something went wrong loading your dashboard.');
-                return res.render('dashboard', { user: req.session.user, gigs: [] });
+                return res.render('dashboard', {
+                    user: req.session.user,
+                    gigs: [],
+                    createdGigs: [],
+                    messages: req.flash('success'),
+                    errors: req.flash('error')
+                });
             }
-            res.render('dashboard', { user: req.session.user, gigs });
+
+            const createdSql = 'SELECT * FROM gigs WHERE creator_id = ? ORDER BY gig_id DESC';
+            db.query(createdSql, [req.session.user.id], (createdErr, createdGigs) => {
+                if (createdErr) {
+                    console.error('Error fetching created gigs for dashboard:', createdErr);
+                    req.flash('error', 'Something went wrong loading your created gigs.');
+                    createdGigs = [];
+                }
+
+                res.render('dashboard', {
+                    user: req.session.user,
+                    gigs,
+                    createdGigs,
+                    messages: req.flash('success'),
+                    errors: req.flash('error')
+                });
+            });
         });
     });
 
