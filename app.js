@@ -210,8 +210,6 @@ app.get('/home', checkAuthenticated, (req, res) => {
                 user: req.session.user,
                 gigs: results,
                 search: search,
-                messages: req.flash('success'),
-                errors: req.flash('error')
             });
         });
     } else {
@@ -224,8 +222,6 @@ app.get('/home', checkAuthenticated, (req, res) => {
                 user: req.session.user,
                 gigs: results,
                 search: '',
-                messages: req.flash('success'),
-                errors: req.flash('error')
             });
         });
     }
@@ -279,8 +275,6 @@ app.get('/gig/:id', checkAuthenticated, (req, res) => {
             res.render('gig', {
                 user: req.session.user,
                 gig: results[0],
-                messages: req.flash('success'),
-                errors: req.flash('error')
             });
         } else {
             res.send('Gig not found');
