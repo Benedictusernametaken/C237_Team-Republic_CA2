@@ -6,7 +6,7 @@
 </head>
 <body>
 
-<%- include('partials/navbar', { user: user, activePage: 'profile' }) %>
+<%- include('partials/navbar', { user: user, activePage: 'admin' }) %>
 
 <main class="container page-shell">
     <% if (messages && messages.length > 0) { %>
@@ -30,26 +30,41 @@
     </a>
 
     <div class="admin-heading">
-        <span class="auth-eyebrow">Admin area</span>
+        <span class="auth-eyebrow">Admin Area</span>
+
         <h1>Admin Dashboard</h1>
+
         <p>
-            Welcome, <strong class="text-white"><%= user.username %></strong>
+            Welcome,
+            <strong class="text-white">
+                <%= user.username %>
+            </strong>
         </p>
     </div>
 
-    <!-- Total and average calculations based on the CA1 dashboard idea -->
     <section class="admin-stats">
         <div class="summary-card">
             <h3>Total Users</h3>
-            <p class="summary-number"><%= totalUsers %></p>
-            <p class="stat-note mb-0">Non-admin accounts</p>
+
+            <p class="summary-number">
+                <%= totalUsers %>
+            </p>
+
+            <p class="stat-note mb-0">
+                Non-admin accounts
+            </p>
         </div>
 
         <div class="summary-card">
             <h3>Average Gigs Posted Per User</h3>
-            <p class="summary-number"><%= averageGigsPerUser %></p>
+
+            <p class="summary-number">
+                <%= averageGigsPerUser %>
+            </p>
+
             <p class="stat-note mb-0">
-                <%= totalGigs %> total gigs ÷ <%= totalUsers %> users
+                <%= totalGigs %> total gigs divided by
+                <%= totalUsers %> users
             </p>
         </div>
     </section>
@@ -57,7 +72,10 @@
     <div class="chart-grid">
         <section class="chart-panel">
             <h2 class="h4">Gig Categories</h2>
-            <p>Distribution of gigs across each category.</p>
+
+            <p>
+                Distribution of gigs across each category.
+            </p>
 
             <div class="chart-wrap">
                 <canvas id="categoryChart"></canvas>
@@ -66,6 +84,7 @@
 
         <section class="chart-panel">
             <h2 class="h4">User Activity</h2>
+
             <p>
                 Non-admin users grouped by posting and accepting activity.
             </p>
@@ -75,7 +94,7 @@
             </div>
 
             <p class="chart-note mb-0">
-                Each non-admin user is counted once: posted only,
+                Each non-admin user is counted once as posted only,
                 accepted only, both, or no activity.
             </p>
         </section>
@@ -83,11 +102,16 @@
 
     <section class="user-panel">
         <h2 class="h4">User Accounts</h2>
-        <p>View and delete registered accounts.</p>
+
+        <p>
+            View and delete registered accounts.
+        </p>
 
         <% if (!users || users.length === 0) { %>
             <div class="empty-message">
-                <p class="mb-0">No user accounts found.</p>
+                <p class="mb-0">
+                    No user accounts found.
+                </p>
             </div>
         <% } else { %>
             <div class="table-responsive">
@@ -100,18 +124,26 @@
                             <th>Action</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         <% users.forEach(account => { %>
                             <tr>
-                                <td><%= account.id %></td>
-                                <td><%= account.username %></td>
+                                <td>
+                                    <%= account.id %>
+                                </td>
+
+                                <td>
+                                    <%= account.username %>
+                                </td>
+
                                 <td>
                                     <span class="role-badge">
                                         <%= account.role || 'user' %>
                                     </span>
                                 </td>
+
                                 <td>
-                                    <% if (Number(account.id) === Number(user.id)) { %>
+                                    <% if (account.id == user.id) { %>
                                         <button
                                             type="button"
                                             class="btn btn-secondary btn-sm"
@@ -123,7 +155,7 @@
                                         <form
                                             action="/admin/users/<%= account.id %>/delete"
                                             method="POST"
-                                            onsubmit="return confirm('Delete <%= account.username %>? This cannot be undone.')"
+                                            onsubmit="return confirm('Delete this user account?')"
                                         >
                                             <button
                                                 type="submit"
@@ -144,11 +176,16 @@
 
     <section class="report-panel">
         <h2 class="h4">Pending Reports</h2>
-        <p>Review reports submitted by users.</p>
+
+        <p>
+            Review reports submitted by users.
+        </p>
 
         <% if (!reports || reports.length === 0) { %>
             <div class="empty-message">
-                <p class="mb-0">No pending reports.</p>
+                <p class="mb-0">
+                    No pending reports.
+                </p>
             </div>
         <% } else { %>
             <div class="table-responsive">
@@ -164,30 +201,48 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         <% reports.forEach(report => { %>
                             <tr>
-                                <td><%= report.report_id %></td>
-                                <td><%= report.reason %></td>
-                                <td><%= report.comment || 'No comment' %></td>
+                                <td>
+                                    <%= report.report_id %>
+                                </td>
+
+                                <td>
+                                    <%= report.reason %>
+                                </td>
+
+                                <td>
+                                    <%= report.comment || 'No comment' %>
+                                </td>
+
                                 <td>
                                     <a href="/gig/<%= report.gig_id %>">
                                         <%= report.gig_id %>
                                     </a>
                                 </td>
-                                <td><%= report.user_id %></td>
+
+                                <td>
+                                    <%= report.user_id %>
+                                </td>
+
                                 <td>
                                     <span class="report-status">
                                         <%= report.status %>
                                     </span>
                                 </td>
+
                                 <td>
                                     <div class="report-actions">
                                         <form
                                             action="/admin/reports/<%= report.report_id %>/accept"
                                             method="POST"
                                         >
-                                            <button type="submit" class="btn btn-success btn-sm">
+                                            <button
+                                                type="submit"
+                                                class="btn btn-success btn-sm"
+                                            >
                                                 Accept
                                             </button>
                                         </form>
@@ -196,7 +251,10 @@
                                             action="/admin/reports/<%= report.report_id %>/deny"
                                             method="POST"
                                         >
-                                            <button type="submit" class="btn btn-danger btn-sm">
+                                            <button
+                                                type="submit"
+                                                class="btn btn-danger btn-sm"
+                                            >
                                                 Deny
                                             </button>
                                         </form>
@@ -215,15 +273,23 @@
     fetch('/api/gig-category-chart')
         .then(response => response.json())
         .then(data => {
-            const labels = data.map(item => item.category || 'Uncategorised');
-            const totals = data.map(item => item.total);
+            const labels = data.map(item => {
+                return item.category || 'Uncategorised';
+            });
+
+            const totals = data.map(item => {
+                return item.total;
+            });
 
             new Chart(document.getElementById('categoryChart'), {
                 type: 'doughnut',
+
                 data: {
-                    labels,
+                    labels: labels,
+
                     datasets: [{
                         data: totals,
+
                         backgroundColor: [
                             '#6257ff',
                             '#4ea1ff',
@@ -232,16 +298,20 @@
                             '#35c98b',
                             '#9478ff'
                         ],
+
                         borderColor: '#22304f',
                         borderWidth: 4
                     }]
                 },
+
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+
                     plugins: {
                         legend: {
                             position: 'bottom',
+
                             labels: {
                                 color: '#f5f7ff',
                                 padding: 14
@@ -252,13 +322,16 @@
             });
         })
         .catch(error => {
-            console.error('Unable to load category chart:', error);
+            console.log('Unable to load category chart:', error);
         });
 
-    const userActivity = <%- JSON.stringify(userActivity) %>;
+    const userActivity = JSON.parse(
+        '<%- JSON.stringify(userActivity) %>'
+    );
 
     new Chart(document.getElementById('userActivityChart'), {
         type: 'doughnut',
+
         data: {
             labels: [
                 'Posted Only',
@@ -266,6 +339,7 @@
                 'Posted and Accepted',
                 'No Activity'
             ],
+
             datasets: [{
                 data: [
                     userActivity.postedOnlyUsers,
@@ -273,22 +347,27 @@
                     userActivity.bothUsers,
                     userActivity.inactiveUsers
                 ],
+
                 backgroundColor: [
                     '#6257ff',
                     '#35c98b',
                     '#f35482',
                     '#aeb9d5'
                 ],
+
                 borderColor: '#22304f',
                 borderWidth: 4
             }]
         },
+
         options: {
             responsive: true,
             maintainAspectRatio: false,
+
             plugins: {
                 legend: {
                     position: 'bottom',
+
                     labels: {
                         color: '#f5f7ff',
                         padding: 14
@@ -298,6 +377,7 @@
         }
     });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
